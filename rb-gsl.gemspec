@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name = 'gsl'
   # GitHub uses the version in order to decide whenever to rebuild
-  s.version = '1.11.2.1'
+  s.version = '1.11.2.2'
   s.summary = 'Ruby interface to GSL'
   s.description = 'RubyGSL is a Ruby interface to the GNU Scientific Library, for numerical computing with Ruby'
   s.required_ruby_version = '>= 1.8.1'
