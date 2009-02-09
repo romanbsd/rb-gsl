@@ -21,7 +21,7 @@ spec = Gem::Specification.new do |s|
 
   # Files, Libraries, and Extensions
   s.files = FileList[
-    'README',
+    'README.rdoc',
     'VERSION',
     'Rakefile',
     'ext/*',

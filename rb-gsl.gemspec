@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.extensions = ['ext/extconf.rb']
   s.homepage = 'http://rb-gsl.rubyforge.org/'
   s.rubyforge_project = 'rb-gsl'
-  s.files = Dir['README', 'VERSION', 'Rakefile', 'ext/*',
+  s.files = Dir['README.rdoc', 'VERSION', 'Rakefile', 'ext/*',
                  'lib/**/*', 'include/*']
   s.require_paths = ['lib', 'lib/gsl', 'lib/ool', 'ext']
 end
