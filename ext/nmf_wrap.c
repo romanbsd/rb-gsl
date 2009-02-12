@@ -48,16 +48,18 @@ static VALUE difcost_wrap(VALUE obj, VALUE matrix1, VALUE matrix2)
   return rb_float_new(difcost(m1, m2));
 }
 
-void Init_gsl_matrix_nmf(void) {
-/*
-  cgsl = rb_define_module("GSL");
-  cgsl_matrix = rb_define_module_under(cgsl, "Matrix");
-  cgsl_matrix = rb_const_get(rb_const_get(rb_cObject, rb_intern("GSL")),
-      rb_intern("Matrix"));
-*/
+/* call-seq:
+ *   nmf(cols) -> [GSL::Matrix, GSL::Matrix]
+ */
+static VALUE matrix_nmf(VALUE obj, VALUE cols)
+{
+  nmf_wrap(cgsl_matrix, obj, cols);
+}
 
+void Init_gsl_matrix_nmf(void) {
   mNMF = rb_define_module_under(cgsl_matrix, "NMF");
 
   rb_define_singleton_method(mNMF, "nmf", nmf_wrap, 2);
   rb_define_singleton_method(mNMF, "difcost", difcost_wrap, 2);
+  rb_define_method(cgsl_matrix, "nmf", matrix_nmf, 1);
 }

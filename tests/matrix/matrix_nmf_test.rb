@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 
+$:.unshift(*['lib','ext'].collect{|d| File.join(File.dirname(__FILE__),'..','..',d)})
+require 'rubygems'
 require 'test/unit'
 require 'gsl'
-#require 'nmf'
 
 class MatrixNmfTest < Test::Unit::TestCase
 
@@ -19,6 +20,15 @@ class MatrixNmfTest < Test::Unit::TestCase
   def test_nmf
     [2, 3, 4, 5].each do |cols|
       res = GSL::Matrix::NMF.nmf(@m1, cols)
+      assert_equal([3,cols], res[0].size)
+      assert_equal([cols,3], res[1].size)
+      cost = GSL::Matrix::NMF.difcost(@m1, res[0]*res[1])
+      assert(cost <= 0.000001, "Cols: #{cols}, Delta: #{cost}")
+    end
+  end
+  def test_matrix_nmf
+    [2, 3, 4, 5].each do |cols|
+      res = @m1.nmf(cols)
       assert_equal([3,cols], res[0].size)
       assert_equal([cols,3], res[1].size)
       cost = GSL::Matrix::NMF.difcost(@m1, res[0]*res[1])
