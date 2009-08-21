@@ -2,7 +2,7 @@ Gem::Specification.new do |s|
   # Basics
   s.name = 'gsl'
   # GitHub uses the version in order to decide whenever to rebuild
-  s.version = '1.12.90'
+  s.version = '1.12.90.1'
   s.summary = 'Ruby interface to GSL'
   s.description = 'RubyGSL is a Ruby interface to the GNU Scientific Library, for numerical computing with Ruby'
   s.required_ruby_version = '>= 1.8.1'
@@ -16,14 +16,8 @@ Gem::Specification.new do |s|
   s.rubyforge_project = 'rb-gsl'
 
   # Files, Libraries, and Extensions
-  s.files = FileList[
-    'README.rdoc',
-    'VERSION',
-    'Rakefile',
-    'ext/*',
-    'lib/**/*',
-    'include/*'
-  ].to_a
+  s.files = Dir['README.rdoc', 'VERSION', 'Rakefile', 'ext/*',
+    'lib/**/*', 'include/*']
   s.require_paths = ['lib', 'lib/gsl', 'lib/ool', 'ext']
   #s.autorequire = nil
   #s.bindir = 'bin'
