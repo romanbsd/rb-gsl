@@ -12,8 +12,6 @@
 #ifndef ___RB_GSL_H___
 #define ___RB_GSL_H___
 
-#include "ruby.h"
-#include "rubyio.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -40,6 +38,14 @@
 #include "rb_gsl_fit.h"
 #include "rb_gsl_const.h"
 #include "rb_gsl_config.h"
+
+
+#include "ruby.h"
+#ifdef RUBY_1_9_LATER
+#include "ruby/io.h"
+#else
+#include "rubyio.h"
+#endif
 
 void Init_gsl_error(VALUE module);
 void Init_gsl_math(VALUE module);
@@ -136,5 +142,10 @@ void Init_fresnel(VALUE module);
 void Init_bspline(VALUE module);
 #endif
 
+#ifdef HAVE_ALF_ALF_H
+#include "alf/alf.h"
+#endif
+void Init_alf(VALUE module);
+void Init_geometry(VALUE module);
 
 #endif

@@ -33,7 +33,13 @@ FILE* rb_gsl_open_writefile(VALUE io, int *flag)
     break;
   case T_FILE:
     GetOpenFile(io, fptr);
+    /*
+#ifdef RUBY_1_9_LATER
+    name = STR2CSTR(fptr->pathv);
+#else
     name = fptr->path;
+#endif
+    */
     rb_io_check_writable(fptr);
 #ifdef RUBY_1_9_LATER
     fp = rb_io_stdio_file(fptr);
@@ -46,7 +52,8 @@ FILE* rb_gsl_open_writefile(VALUE io, int *flag)
     rb_raise(rb_eTypeError, "argv 1 String or File expected");
     break;
   }
-  if (fp == NULL) rb_raise(rb_eIOError, "Cannot open file %s.", name);
+  //  if (fp == NULL) rb_raise(rb_eIOError, "Cannot open file %s.", name);
+  if (fp == NULL) rb_raise(rb_eIOError, "Cannot open file.");
   return fp;
 }
 
@@ -67,7 +74,13 @@ FILE* rb_gsl_open_readfile(VALUE io, int *flag)
     break;
   case T_FILE:
     GetOpenFile(io, fptr);
+    /*
+#ifdef RUBY_1_9_LATER
+    name = STR2CSTR(fptr->pathv);
+#else
     name = fptr->path;
+#endif
+    */
     rb_io_check_readable(fptr);
 #ifdef RUBY_1_9_LATER
     fp = rb_io_stdio_file(fptr);
@@ -80,7 +93,8 @@ FILE* rb_gsl_open_readfile(VALUE io, int *flag)
     rb_raise(rb_eTypeError, "argv 1 String or File expected");
     break;
   }
-  if (fp == NULL) rb_raise(rb_eIOError, "Cannot open file %s.", name);
+  //  if (fp == NULL) rb_raise(rb_eIOError, "Cannot open file %s.", name);
+  if (fp == NULL) rb_raise(rb_eIOError, "Cannot open file");
   return fp;
 }
 
@@ -282,7 +296,8 @@ VALUE rb_gsl_ary_eval1(VALUE ary, double (*f)(double))
   VALUE ary2;
   size_t i, n;
   double val;
-  n = RARRAY(ary)->len;
+  //  n = RARRAY(ary)->len;
+  n = RARRAY_LEN(ary);
   ary2 = rb_ary_new2(n);
   for (i = 0; i < n; i++) {
     val = (*f)(NUM2DBL(rb_ary_entry(ary, i)));

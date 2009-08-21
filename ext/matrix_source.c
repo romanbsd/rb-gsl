@@ -389,14 +389,14 @@ GSL_TYPE(gsl_matrix)* FUNCTION(gsl_matrix,alloc_from_arrays)(int argc, VALUE *ar
   GSL_TYPE(gsl_matrix) *m = NULL;
   if (CLASS_OF(argv[0]) == rb_cRange) argv[0] = rb_gsl_range2ary(argv[0]);
   else Check_Type(argv[0], T_ARRAY);
-  n = RARRAY(argv[0])->len;
+  n = RARRAY_LEN(argv[0]);
   m = FUNCTION(gsl_matrix,alloc)(argc, n);
   if (m == NULL) rb_raise(rb_eNoMemError, "gsl_matrix_alloc failed");
   for (i = 0; i < argc; i++) {
     if (CLASS_OF(argv[i]) == rb_cRange) argv[i] = rb_gsl_range2ary(argv[i]);
     else Check_Type(argv[i], T_ARRAY);
     for (j = 0; j < n; j++) {
-      if (j >= RARRAY(argv[i])->len) FUNCTION(gsl_matrix,set)(m, i, j, 0);
+      if (j >= RARRAY_LEN(argv[i])) FUNCTION(gsl_matrix,set)(m, i, j, 0);
       else FUNCTION(gsl_matrix,set)(m, i, j, NUMCONV2(rb_ary_entry(argv[i], j)));
     }
   }
@@ -454,7 +454,7 @@ GSL_TYPE(gsl_matrix)* FUNCTION(gsl_matrix,alloc_from_array_sizes)(VALUE ary,
   m = FUNCTION(gsl_matrix,alloc)(n1, n2);
   if (m == NULL) rb_raise(rb_eNoMemError, "gsl_matrix_alloc failed");
   k = 0;
-  len = RARRAY(ary)->len;
+  len = RARRAY_LEN(ary);
   for (i = 0; i < n1; i++) {
     for (j = 0; j < n2; j++, k++) {
       if (k >= len)
@@ -527,7 +527,7 @@ static VALUE FUNCTION(rb_gsl_matrix,diagonal_singleton)(int argc, VALUE *argv, V
     else ary = argv[0];
     switch (TYPE(ary)) {
     case T_ARRAY:
-      len = RARRAY(ary)->len;
+      len = RARRAY_LEN(ary);
       m = FUNCTION(gsl_matrix,calloc)(len, len);
       for (i = 0; i < len; i++) {
 	tmp = rb_ary_entry(ary, i);
@@ -706,7 +706,7 @@ static VALUE FUNCTION(rb_gsl_matrix,get)(int argc, VALUE *argv, VALUE obj)
       if(ij < 0) ij += m->size2;
       retval = C_TO_VALUE2(FUNCTION(gsl_matrix,get)(m, (size_t)ii, (size_t)ij));
     } else {
-      rb_raise(rb_eArgError, "Array index must have length 2, not %d", RARRAY_LEN(argv[0]));
+      rb_raise(rb_eArgError, "Array index must have length 2, not %d", (int) RARRAY_LEN(argv[0]));
     }
   } else {
     retval = FUNCTION(rb_gsl_matrix,submatrix)(argc, argv, obj);
@@ -733,9 +733,28 @@ static VALUE FUNCTION(rb_gsl_matrix,set)(int argc, VALUE *argv, VALUE obj)
   Data_Get_Struct(obj, GSL_TYPE(gsl_matrix), m);
   other = argv[argc-1];
 
-  if(argc == 1) {
+  if(argc == 1 && TYPE(argv[0]) == T_ARRAY) {
+    // m.set([row0,row1,...])
+    n1 = RARRAY_LEN(argv[0]);
+    if(n1 > m->size1) n1 = m->size1;
+    row_set_argv[0] = INT2FIX(0);
+    // Each given row must have as manay elements as m has columns.
+    // The bounds check happens inside rb_gsl_vector*set_subvector().
+    row_set_argv[1] = INT2FIX(m->size2);
+    for(k = 0; k < n1 && k < m->size1; k++) {
+      vv = FUNCTION(gsl_matrix,row)(m, k);
+      FUNCTION(rb_gsl_vector,set_subvector)(2, row_set_argv, &vv.vector, rb_ary_entry(argv[0], k));
+    }
+  } else if(argc == 1) {
     // m[] = x
     FUNCTION(gsl_matrix,set_all)(m, NUMCONV2(other));
+  } else if(argc==2 && TYPE(argv[0]) == T_ARRAY && TYPE(argv[1]) != T_ARRAY) {
+    // m.set([i, j], x) or m[[i,j]] = x
+    ii = FIX2INT(rb_ary_entry(argv[0], 0));
+    ij = FIX2INT(rb_ary_entry(argv[0], 1));
+    if(ii < 0) ii += m->size1;
+    if(ij < 0) ij += m->size2;
+    FUNCTION(gsl_matrix,set)(m, (size_t)ii, (size_t)ij, NUMCONV2(argv[1]));
   } else if(argc == 3 && TYPE(argv[0]) == T_FIXNUM && TYPE(argv[1]) == T_FIXNUM) {
     // m[i,j] = x
     ii = FIX2INT(argv[0]);
@@ -744,11 +763,12 @@ static VALUE FUNCTION(rb_gsl_matrix,set)(int argc, VALUE *argv, VALUE obj)
     if(ij < 0) ij += m->size2;
     FUNCTION(gsl_matrix,set)(m, (size_t)ii, (size_t)ij, NUMCONV2(other));
   } else if(TYPE(argv[0]) == T_ARRAY) {
-    // m.set(row0...)
+    // m.set(row0,row1,...)
+    n1 = argc;
+    if(n1 > m->size1) n1 = m->size1;
     row_set_argv[0] = INT2FIX(0);
     row_set_argv[1] = INT2FIX(m->size2);
-
-    for(k = 0; k < argc && k < m->size1; k++) {
+    for(k = 0; k < n1 && k < m->size1; k++) {
       vv = FUNCTION(gsl_matrix,row)(m, k);
       FUNCTION(rb_gsl_vector,set_subvector)(2, row_set_argv, &vv.vector, argv[k]);
     }
@@ -763,7 +783,7 @@ static VALUE FUNCTION(rb_gsl_matrix,set)(int argc, VALUE *argv, VALUE obj)
       Data_Get_Struct(other, GSL_TYPE(gsl_matrix), mother);
       if(n1 * n2 != mother->size1 * mother->size2) {
         rb_raise(rb_eRangeError, "sizes do not match (%d x %d != %d x %d)",
-            n1, n2, mother->size1, mother->size2);
+		 (int) n1, (int) n2, (int) mother->size1, (int) mother->size2);
       }
       // TODO Change to gsl_matrix_memmove if/when GSL has such a function
       // because gsl_matrix_memcpy does not handle overlapping regions (e.g.
@@ -781,7 +801,7 @@ static VALUE FUNCTION(rb_gsl_matrix,set)(int argc, VALUE *argv, VALUE obj)
         // m[...] = [[row0], [row1], ...] # multiple rows
         if(n1 != RARRAY_LEN(other)) {
           rb_raise(rb_eRangeError, "row counts do not match (%d != %d)",
-              n1, RARRAY_LEN(other));
+		   (int) n1, (int) RARRAY_LEN(other));
         }
         for(k = 0; k < n1; k++) {
           vv = FUNCTION(gsl_matrix,row)(&mv.matrix, k);
@@ -793,7 +813,7 @@ static VALUE FUNCTION(rb_gsl_matrix,set)(int argc, VALUE *argv, VALUE obj)
       // m[...] = beg..end
       FUNCTION(get_range,beg_en_n)(other, &beg, &end, &nother, &step);
       if(n1 * n2 != nother) {
-        rb_raise(rb_eRangeError, "sizes do not match (%d x %d != %d)", n1, n2, nother);
+        rb_raise(rb_eRangeError, "sizes do not match (%d x %d != %d)", (int) n1, (int) n2, (int) nother);
       }
       for(k = 0; k < nother; k++) {
         FUNCTION(gsl_matrix,set)(&mv.matrix, k / n2, k % n2, beg);
@@ -984,7 +1004,7 @@ static VALUE FUNCTION(rb_gsl_matrix,set_diagonal)(VALUE obj, VALUE diag)
     for (i = 0; i < m->size1; i++) FUNCTION(gsl_matrix,set)(m, i, i, x);
     break;
   case T_ARRAY:
-    len = GSL_MIN_INT(m->size1, RARRAY(diag)->len);
+    len = GSL_MIN_INT(m->size1, RARRAY_LEN(diag));
     for (i = 0; i < len; i++) {
       FUNCTION(gsl_matrix,set)(m, i, i, NUMCONV2(rb_ary_entry(diag, i)));
     }
@@ -1040,8 +1060,8 @@ static VALUE FUNCTION(rb_gsl_matrix,set_row)(VALUE obj, VALUE i, VALUE vv)
   CHECK_FIXNUM(i);
   if (CLASS_OF(vv) == rb_cRange) vv = rb_gsl_range2ary(vv);
   if (TYPE(vv) == T_ARRAY) {
-    v = FUNCTION(gsl_vector,alloc)(RARRAY(vv)->len);
-    for (j = 0; j < RARRAY(vv)->len; j++) {
+    v = FUNCTION(gsl_vector,alloc)(RARRAY_LEN(vv));
+    for (j = 0; j < RARRAY_LEN(vv); j++) {
       FUNCTION(gsl_vector,set)(v, j, NUMCONV2(rb_ary_entry(vv, j)));
     }
     flag = 1;
@@ -1064,8 +1084,8 @@ static VALUE FUNCTION(rb_gsl_matrix,set_col)(VALUE obj, VALUE j, VALUE vv)
   CHECK_FIXNUM(j);
   if (CLASS_OF(vv) == rb_cRange) vv = rb_gsl_range2ary(vv);
   if (TYPE(vv) == T_ARRAY) {
-    v = FUNCTION(gsl_vector,alloc)(RARRAY(vv)->len);
-    for (i = 0; i < RARRAY(vv)->len; i++) {
+    v = FUNCTION(gsl_vector,alloc)(RARRAY_LEN(vv));
+    for (i = 0; i < RARRAY_LEN(vv); i++) {
       FUNCTION(gsl_vector,set)(v, i, NUMCONV2(rb_ary_entry(vv, i)));
     }
     flag = 1;
@@ -2265,7 +2285,7 @@ static VALUE FUNCTION(rb_gsl_matrix,horzcat)(VALUE obj, VALUE mm2)
   Data_Get_Struct(mm2, GSL_TYPE(gsl_matrix), m2);
   if (m->size1 != m2->size1) 
     rb_raise(rb_eRuntimeError, "Different number of rows (%d and %d).",
-	     m->size1, m2->size1);
+	     (int) m->size1, (int) m2->size1);
   mnew = FUNCTION(gsl_matrix,alloc)(m->size1, m->size2 + m2->size2);
   for (j = 0, k = 0; j < m->size2; j++, k++) {
     v = FUNCTION(gsl_matrix,column)(m, j);
@@ -2295,7 +2315,7 @@ static VALUE FUNCTION(rb_gsl_matrix,vertcat)(VALUE obj, VALUE mm2)
   Data_Get_Struct(mm2, GSL_TYPE(gsl_matrix), m2);
   if (m->size2 != m2->size2) 
     rb_raise(rb_eRuntimeError, "Different number of columns (%d and %d).",
-	     m->size2, m2->size2);
+	     (int) m->size2, (int) m2->size2);
   mnew = FUNCTION(gsl_matrix,alloc)(m->size1 + m2->size1, m->size2);
   for (i = 0, k = 0; i < m->size1; i++, k++) {
     v = FUNCTION(gsl_matrix,row)(m, i);
@@ -2357,6 +2377,40 @@ static VALUE FUNCTION(rb_gsl_matrix,isnonneg2)(VALUE obj)
   return FUNCTION(rb_gsl_matrix,property2)(obj, FUNCTION(gsl_matrix,isnonneg));  
 }
 #endif
+
+static VALUE FUNCTION(rb_gsl_matrix,symmetrize)(VALUE obj)
+{
+  GSL_TYPE(gsl_matrix) *m, *mnew;
+  size_t i, j;
+  Data_Get_Struct(obj, GSL_TYPE(gsl_matrix), m);
+  if (m->size1 != m->size2)
+    rb_raise(rb_eRuntimeError, "symmetrize: not a square matrix.\n");
+  mnew = FUNCTION(gsl_matrix,alloc)(m->size1, m->size2);
+  for (i = 0; i < m->size1; i++) {
+    for (j = i; j < m->size2; j++) {
+      FUNCTION(gsl_matrix,set)(mnew, i, j, FUNCTION(gsl_matrix,get)(m, i, j));
+    }
+    for (j = 0; j < i; j++) {
+      FUNCTION(gsl_matrix,set)(mnew, i, j, FUNCTION(gsl_matrix,get)(m, j, i));
+    }
+  }
+  return Data_Wrap_Struct(GSL_TYPE(cgsl_matrix), 0, FUNCTION(gsl_matrix,free), mnew);
+}
+
+static VALUE FUNCTION(rb_gsl_matrix,symmetrize_bang)(VALUE obj)
+{
+  GSL_TYPE(gsl_matrix) *m;
+  size_t i, j;
+  Data_Get_Struct(obj, GSL_TYPE(gsl_matrix), m);
+  if (m->size1 != m->size2)
+    rb_raise(rb_eRuntimeError, "symmetrize: not a square matrix.\n");
+  for (i = 0; i < m->size1; i++) {
+    for (j = 0; j < i; j++) {
+      FUNCTION(gsl_matrix,set)(m, i, j, FUNCTION(gsl_matrix,get)(m, j, i));
+    }
+  }
+  return obj;
+}
 
 void FUNCTION(Init_gsl_matrix,init)(VALUE module)
 {
@@ -2656,6 +2710,8 @@ void FUNCTION(Init_gsl_matrix,init)(VALUE module)
   rb_define_method(GSL_TYPE(cgsl_matrix), "isnonneg?", FUNCTION(rb_gsl_matrix,isnonneg2), 0);
 #endif
 
+  rb_define_method(GSL_TYPE(cgsl_matrix), "symmetrize", FUNCTION(rb_gsl_matrix,symmetrize), 0);
+  rb_define_method(GSL_TYPE(cgsl_matrix), "symmetrize!", FUNCTION(rb_gsl_matrix,symmetrize_bang), 0);
 }
 
 #undef NUMCONV

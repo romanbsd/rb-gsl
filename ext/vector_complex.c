@@ -42,7 +42,7 @@ static VALUE rb_gsl_vector_complex_new(int argc, VALUE *argv, VALUE klass)
       if (v == NULL) rb_raise(rb_eNoMemError, "gsl_vector_complex_alloc failed");
       break;
     case T_ARRAY: 
-      n = RARRAY(argv[0])->len;
+      n = RARRAY_LEN(argv[0]);
       v = gsl_vector_complex_alloc(n);
       if (v == NULL) rb_raise(rb_eNoMemError, "gsl_vector_complex_alloc failed");
       for (i = 0; i < n; i++) {
@@ -173,7 +173,7 @@ static VALUE rb_gsl_vector_complex_get(int argc, VALUE *argv, VALUE obj)
       retval = Data_Wrap_Struct(cgsl_complex, 0, free, c);
       break;
     case T_ARRAY:
-      vnew = gsl_vector_complex_alloc(RARRAY(argv[0])->len);
+      vnew = gsl_vector_complex_alloc(RARRAY_LEN(argv[0]));
       for (j = 0; j < vnew->size; j++) {
 	i = FIX2INT(rb_ary_entry(argv[0], j));
 	if (i < 0) i = v->size + i;
@@ -242,7 +242,7 @@ void rb_gsl_vector_complex_set_subvector(int argc, VALUE *argv, gsl_vector_compl
   if(rb_obj_is_kind_of(other, cgsl_vector_complex)) {
     Data_Get_Struct(other, gsl_vector_complex, vother);
     if(n != vother->size) {
-      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", n, vother->size);
+      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", (int) n, (int) vother->size);
     }
     // TODO Change to gsl_vector_complex_memmove if/when GSL has such a
     // function because gsl_vector_memcpy does not handle overlapping regions
@@ -251,7 +251,7 @@ void rb_gsl_vector_complex_set_subvector(int argc, VALUE *argv, gsl_vector_compl
   } else if(rb_obj_is_kind_of(other, rb_cArray)) {
     // TODO Support other forms of Array contents as well
     if(n != RARRAY_LEN(other)) {
-      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", n, RARRAY_LEN(other));
+      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", (int) n, (int) RARRAY_LEN(other));
     }
     for(i = 0; i < n; i++) {
       tmp = rb_gsl_obj_to_gsl_complex(rb_ary_entry(other, i), NULL);
@@ -260,7 +260,7 @@ void rb_gsl_vector_complex_set_subvector(int argc, VALUE *argv, gsl_vector_compl
   } else if(rb_obj_is_kind_of(other, rb_cRange)) {
     get_range_beg_en_n(other, &beg, &end, &nother, &step);
     if(n != nother) {
-      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", n, nother);
+      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", (int) n, (int) nother);
     }
     GSL_SET_IMAG(&tmp, 0.0);
     for(i = 0; i < n; i++) {
@@ -1715,7 +1715,7 @@ static VALUE rb_gsl_vector_complex_concat(VALUE obj, VALUE other)
       break;
 
     case T_ARRAY:
-      size2 = RARRAY(other)->len;
+      size2 = RARRAY_LEN(other);
       vnew = gsl_vector_complex_alloc(v->size + size2);
       vv = gsl_vector_complex_subvector(vnew, 0, v->size);
       gsl_vector_complex_memcpy(&vv.vector, v);

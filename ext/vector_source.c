@@ -84,12 +84,12 @@ void parse_subvector_args(int argc, VALUE *argv, size_t size,
       if(begin < 0 || (size_t)begin >= size) {
         rb_raise(rb_eRangeError,
             "begin value %d is out of range for Vector of length %d",
-            begin, size);
+		 begin, (int) size);
       }
       if(end < 0 || (size_t)end >= size) {
         rb_raise(rb_eRangeError,
             "end value %d is out of range for Vector of length %d",
-            end, size);
+		 end, (int) size);
       }
       *stride = (size_t)step;
     } else {
@@ -98,7 +98,7 @@ void parse_subvector_args(int argc, VALUE *argv, size_t size,
       if((length < 0 && -length > size) || (length > 0 && length > size)) {
         rb_raise(rb_eRangeError,
             "length %d is out of range for Vector of length %d",
-            length, size);
+		 length, (int) size);
       } else if(length < 0) {
         begin = length;
         *n = (size_t)(-length);
@@ -114,12 +114,12 @@ void parse_subvector_args(int argc, VALUE *argv, size_t size,
       if(begin < 0 || (size_t)begin >= size) {
         rb_raise(rb_eRangeError,
             "begin value %d is out of range for Vector of length %d",
-            begin, size);
+		 (int) begin, (int) size);
       }
       if(end < 0 || (size_t)end >= size) {
         rb_raise(rb_eRangeError,
             "end value %d is out of range for Vector of length %d",
-            end, size);
+		 (int) end, (int) size);
       }
       CHECK_FIXNUM(argv[1]);
       step = FIX2INT(argv[1]);
@@ -188,7 +188,11 @@ void FUNCTION(cvector,set_from_rarray)(GSL_TYPE(gsl_vector) *v, VALUE ary)
   size_t i;
   if (CLASS_OF(ary) == rb_cRange) ary = rb_gsl_range2ary(ary);
   Check_Type(ary, T_ARRAY);
-  if (RARRAY(ary)->len == 0) return;
+#ifdef RUBY_1_9_LATER
+  if (RARRAY_LEN(ary) == 0) return;
+#else
+  if (RARRAY_LEN(ary) == 0) return;
+#endif
   for (i = 0; i < v->size; i++) FUNCTION(gsl_vector,set)(v, i, NUMCONV(rb_ary_entry(ary, i)));
 }
 
@@ -197,7 +201,7 @@ GSL_TYPE(gsl_vector)* FUNCTION(make_cvector,from_rarray)(VALUE ary)
   GSL_TYPE(gsl_vector) *v = NULL;
   if (CLASS_OF(ary) == rb_cRange) ary = rb_gsl_range2ary(ary);
   Check_Type(ary, T_ARRAY);
-  v = FUNCTION(gsl_vector,alloc)(RARRAY(ary)->len);
+  v = FUNCTION(gsl_vector,alloc)(RARRAY_LEN(ary));
   if (v == NULL) rb_raise(rb_eNoMemError, "gsl_vector_alloc failed");
   FUNCTION(cvector,set_from_rarray)(v, ary);
   return v;
@@ -328,7 +332,7 @@ static VALUE FUNCTION(rb_gsl_vector,get)(int argc, VALUE *argv, VALUE obj)
         retval = C_TO_VALUE2(FUNCTION(gsl_vector,get)(v, (size_t) (i)));
       break;
     case T_ARRAY:
-      vnew = FUNCTION(gsl_vector,alloc)(RARRAY(argv[0])->len);
+      vnew = FUNCTION(gsl_vector,alloc)(RARRAY_LEN(argv[0]));
       for (j = 0; j < vnew->size; j++) {
         i = NUMCONV(rb_ary_entry(argv[0], j));
         if (i < 0) k = v->size + i;
@@ -401,7 +405,7 @@ void FUNCTION(rb_gsl_vector,set_subvector)(int argc, VALUE *argv, GSL_TYPE(gsl_v
   if(rb_obj_is_kind_of(other, GSL_TYPE(cgsl_vector))) {
     Data_Get_Struct(other, GSL_TYPE(gsl_vector), vother);
     if(n != vother->size) {
-      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", n, vother->size);
+      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)",(int) n, (int) vother->size);
     }
     // TODO Change to gsl_vector_memmove if/when GSL has such a function
     // because gsl_vector_memcpy does not handle overlapping regions (e.g.
@@ -409,7 +413,7 @@ void FUNCTION(rb_gsl_vector,set_subvector)(int argc, VALUE *argv, GSL_TYPE(gsl_v
     FUNCTION(gsl_vector,memcpy)(&vv.vector, vother);
   } else if(rb_obj_is_kind_of(other, rb_cArray)) {
     if(n != RARRAY_LEN(other)) {
-      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", n, RARRAY_LEN(other));
+      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", (int) n, (int) RARRAY_LEN(other));
     }
     for(i = 0; i < n; i++) {
       FUNCTION(gsl_vector,set)(&vv.vector, i, NUMCONV2(rb_ary_entry(other, i)));
@@ -417,7 +421,7 @@ void FUNCTION(rb_gsl_vector,set_subvector)(int argc, VALUE *argv, GSL_TYPE(gsl_v
   } else if(rb_obj_is_kind_of(other, rb_cRange)) {
     FUNCTION(get_range,beg_en_n)(other, &beg, &end, &nother, &step);
     if(n != nother) {
-      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", n, nother);
+      rb_raise(rb_eRangeError, "lengths do not match (%d != %d)", (int) n, (int) nother);
     }
     for(i = 0; i < n; i++) {
       FUNCTION(gsl_vector,set)(&vv.vector, i, beg);
@@ -1591,7 +1595,7 @@ static VALUE FUNCTION(rb_gsl_vector,to_gplot)(int argc, VALUE *argv, VALUE obj)
   switch (TYPE(obj)) {
   case T_MODULE: case T_CLASS: case T_OBJECT:
     if (argc < 1) rb_raise(rb_eArgError, "no vectors given");
-    if (TYPE(argv[0]) == T_ARRAY) nv = RARRAY(argv[0])->len;
+    if (TYPE(argv[0]) == T_ARRAY) nv = RARRAY_LEN(argv[0]);
     else nv = argc;
     vp = (GSL_TYPE(gsl_vector)**) ALLOC_N(GSL_TYPE(gsl_vector)*, nv);
     istart = 0;
@@ -1599,7 +1603,7 @@ static VALUE FUNCTION(rb_gsl_vector,to_gplot)(int argc, VALUE *argv, VALUE obj)
   default:
     CHECK_VEC(obj);
     Data_Get_Struct(obj, GSL_TYPE(gsl_vector), v);
-    if (argc >= 1 && TYPE(argv[0]) == T_ARRAY) nv = 1 + RARRAY(argv[0])->len;
+    if (argc >= 1 && TYPE(argv[0]) == T_ARRAY) nv = 1 + RARRAY_LEN(argv[0]);
     else nv = argc + 1;
     vp = (GSL_TYPE(gsl_vector)**) ALLOC_N(GSL_TYPE(gsl_vector)*, nv);
     vp[0] = v; len = v->size;
@@ -1910,7 +1914,7 @@ static VALUE FUNCTION(rb_gsl_vector,histogram)(int argc, VALUE *argv, VALUE obj)
       gsl_histogram_set_ranges_uniform(h, min, max);
       break;
     case T_ARRAY:
-      n = RARRAY(argv[0])->len - 1;
+      n = RARRAY_LEN(argv[0]) - 1;
       h = gsl_histogram_alloc(n);
       for (i = 0; i <= n; i++) h->range[i] = NUM2DBL(rb_ary_entry(argv[0], i));
       break;
@@ -1989,7 +1993,7 @@ static VALUE FUNCTION(rb_gsl_vector,concat)(VALUE obj, VALUE other)
       break;
 
     case T_ARRAY:
-      size2 = RARRAY(other)->len;
+      size2 = RARRAY_LEN(other);
       vnew = FUNCTION(gsl_vector,alloc)(v->size + size2);
       vv = FUNCTION(gsl_vector,subvector)(vnew, 0, v->size);
       FUNCTION(gsl_vector,memcpy)(&vv.vector, v);
@@ -2902,7 +2906,7 @@ static VALUE FUNCTION(rb_gsl_vector,join)(int argc, VALUE *argv, VALUE obj)
     rb_raise(rb_eArgError, "Wrong number of arguments (%d for 0 or 1)", argc);
   }
   Data_Get_Struct(obj, GSL_TYPE(gsl_vector), v);
-  //  p = (char *) malloc((10+RSTRING(sep)->len)*v->size + 1);
+  //  p = (char *) malloc((10+RSTRING(sep))*v->size + 1);
   p = (char *) malloc((10+RSTRING_LEN(sep))*v->size + 1);
   str = rb_str_new2(p);
   for (i = 0; i < v->size; i++) {

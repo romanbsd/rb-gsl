@@ -216,7 +216,8 @@ static VALUE rb_gsl_matrix_complex_eye(int argc, VALUE *argv, VALUE klass)
       z = gsl_complex_rect(NUM2DBL(argv[1]), 0.0);
       break;
     case T_ARRAY:
-      if (RARRAY(argv[1])->len < 2) rb_raise(rb_eArgError, "wrong argument");
+      //      if (RARRAY(argv[1])->len < 2) rb_raise(rb_eArgError, "wrong argument");
+      if (RARRAY_LEN(argv[1]) < 2) rb_raise(rb_eArgError, "wrong argument");
       z = gsl_complex_rect(NUM2DBL(rb_ary_entry(argv[1], 0)),
 			   NUM2DBL(rb_ary_entry(argv[1], 1)));
       break;
@@ -356,7 +357,7 @@ static VALUE rb_gsl_matrix_complex_set(int argc, VALUE *argv, VALUE obj)
       Data_Get_Struct(other, gsl_matrix_complex, mother);
       if(n1 * n2 != mother->size1 * mother->size2) {
         rb_raise(rb_eRangeError, "sizes do not match (%d x %d != %d x %d)",
-            n1, n2, mother->size1, mother->size2);
+		 (int) n1, (int) n2, (int) mother->size1, (int) mother->size2);
       }
       // TODO Change to gsl_matrix_memmove if/when GSL has such a function
       // because gsl_matrix_memcpy does not handle overlapping regions (e.g.
@@ -374,7 +375,7 @@ static VALUE rb_gsl_matrix_complex_set(int argc, VALUE *argv, VALUE obj)
         // m[...] = [[row0], [row1], ...] # multiple rows
         if(n1 != RARRAY_LEN(other)) {
           rb_raise(rb_eRangeError, "row counts do not match (%d != %d)",
-              n1, RARRAY_LEN(other));
+		   (int) n1, (int) RARRAY_LEN(other));
         }
         for(k = 0; k < n1; k++) {
           vv = gsl_matrix_complex_row(&mv.matrix, k);
@@ -386,7 +387,7 @@ static VALUE rb_gsl_matrix_complex_set(int argc, VALUE *argv, VALUE obj)
       // m[...] = beg..end
       get_range_beg_en_n(other, &beg, &end, &nother, &step);
       if(n1 * n2 != nother) {
-        rb_raise(rb_eRangeError, "sizes do not match (%d x %d != %d)", n1, n2, nother);
+        rb_raise(rb_eRangeError, "sizes do not match (%d x %d != %d)", (int) n1, (int) n2, (int) nother);
       }
       tmp = gsl_complex_rect(beg, 0.0);
       for(k = 0; k < nother; k++) {
@@ -492,7 +493,7 @@ static VALUE rb_gsl_matrix_complex_get(int argc, VALUE *argv, VALUE obj)
       *c = gsl_matrix_complex_get(m, (size_t)ii, (size_t)ij); 
       retval = Data_Wrap_Struct(cgsl_complex, 0, free, c);
     } else {
-      rb_raise(rb_eArgError, "Array index must have length 2, not %d", RARRAY_LEN(argv[0]));
+      rb_raise(rb_eArgError, "Array index must have length 2, not %d", (int) RARRAY_LEN(argv[0]));
     }
   } else {
     retval = rb_gsl_matrix_complex_submatrix(argc, argv, obj);

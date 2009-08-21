@@ -119,6 +119,10 @@ def check_version(configfile)
     if ver >= "1.11"
       configfile.printf("#ifndef GSL_1_11_LATER\n#define GSL_1_11_LATER\n#endif\n")
     end    
+
+   if ver >= "1.12.90"
+      configfile.printf("#ifndef GSL_1_13_LATER\n#define GSL_1_13_LATER\n#endif\n")
+    end    
   end
 end
 
@@ -172,10 +176,15 @@ begin
     RB_GSL_CONFIG.printf("#ifndef HAVE_EIGEN_FRANCIS\n#define HAVE_EIGEN_FRANCIS\n#endif\n")
   end
 
-	if have_header("ndlinear/gsl_multifit_ndlinear.h")
-		have_library("ndlinear")
-	end
-	
+  if have_header("ndlinear/gsl_multifit_ndlinear.h")
+    have_library("ndlinear")
+  end
+
+# Added 2009/Apr/20
+  if have_header("alf/alf.h")
+    have_library("alf")
+  end
+  
   begin
     print("checking rb-gsl version...")
     IO.popen("cat ../VERSION") do |f|

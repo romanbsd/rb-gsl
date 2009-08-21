@@ -626,7 +626,7 @@ static int gsl_multifit_function_fdf_f(const gsl_vector *x, void *params,
   proc = rb_ary_entry(ary, 0);
   vx = Data_Wrap_Struct(cgsl_vector, 0, NULL, (gsl_vector *) x);
   vf = Data_Wrap_Struct(cgsl_vector, 0, NULL, f);
-  switch (RARRAY(vt_y_sigma)->len) {
+  switch (RARRAY_LEN(vt_y_sigma)) {
   case 2:
     vt = rb_ary_entry(vt_y_sigma, 0);
     vy = rb_ary_entry(vt_y_sigma, 1);
@@ -654,7 +654,7 @@ static int gsl_multifit_function_fdf_df(const gsl_vector *x, void *params,
   proc = rb_ary_entry(ary, 1);
   vx = Data_Wrap_Struct(cgsl_vector, 0, NULL, (gsl_vector *) x);
   vJ = Data_Wrap_Struct(cgsl_matrix, 0, NULL, J);
-  switch (RARRAY(vt_y_sigma)->len) {
+  switch (RARRAY_LEN(vt_y_sigma)) {
   case 2:
     vt = rb_ary_entry(vt_y_sigma, 0);
     vy = rb_ary_entry(vt_y_sigma, 1);
@@ -686,7 +686,7 @@ static int gsl_multifit_function_fdf_fdf(const gsl_vector *x, void *params,
   vx = Data_Wrap_Struct(cgsl_vector, 0, NULL, (gsl_vector *) x);
   vf = Data_Wrap_Struct(cgsl_vector, 0, NULL, f);
   vJ = Data_Wrap_Struct(cgsl_matrix, 0, NULL, J);
-  switch (RARRAY(vt_y_sigma)->len) {
+  switch (RARRAY_LEN(vt_y_sigma)) {
   case 2:
     vt = rb_ary_entry(vt_y_sigma, 0);
     vy = rb_ary_entry(vt_y_sigma, 1);
@@ -1417,6 +1417,64 @@ static int Lognormal_fdf(const gsl_vector *v, void *data,
   return GSL_SUCCESS;
 }
 
+/* Rayleigh fit 
+   y = A exp(-x*x/2/var)
+       v[0] = A
+       v[1] = var = sigma^2
+*/
+static int Rayleigh_f(const gsl_vector *v, void *data, gsl_vector *f)
+{
+  gsl_vector *x, *y, *w;
+  double A, var, xi, yi, wi;
+  size_t i;
+  struct fitting_xydata *xydata;
+  xydata = (struct fitting_xydata*) data;
+  x = xydata->x;
+  y = xydata->y;
+  w = xydata->w;
+  var = gsl_vector_get(v, 1);
+  A = gsl_vector_get(v, 0);
+  for (i = 0; i < x->size; i++) {
+    xi = gsl_vector_get(x, i);
+    yi = gsl_vector_get(y, i);
+    if (w) wi = gsl_vector_get(w, i);
+    else wi = 1.0;
+    gsl_vector_set(f, i, (A*xi*exp(-xi*xi/var/2.0) - yi)*wi);
+  }
+  return GSL_SUCCESS;
+}
+
+static int Rayleigh_df(const gsl_vector *v, void *data, gsl_matrix *J)
+{
+  double A, var, xi, yy, wi;
+  size_t i;
+  struct fitting_xydata *xydata;
+  gsl_vector *x, *y, *w;
+  xydata = (struct fitting_xydata*) data;
+  x = xydata->x;
+  y = xydata->y;
+  w = xydata->w;
+  var = gsl_vector_get(v, 1);
+  A = gsl_vector_get(v, 0);
+  for (i = 0; i < x->size; i++) {
+    xi = gsl_vector_get(x, i);
+    if (w) wi = gsl_vector_get(w, i);
+    else wi = 1.0;
+    yy = xi*exp(-xi*xi/var/2.0);
+    gsl_matrix_set(J, i, 1, A*yy*xi*xi/2/var/var*wi);
+    gsl_matrix_set(J, i, 0, yy*wi);
+  }
+  return GSL_SUCCESS;
+}
+
+static int Rayleigh_fdf(const gsl_vector *v, void *data,
+			gsl_vector *f, gsl_matrix *J)
+{
+  Rayleigh_f(v, data, f);
+  Rayleigh_df(v, data, J);
+  return GSL_SUCCESS;
+}
+
 static void set_fittype(gsl_multifit_function_fdf *f, const char *fittype, size_t *p, gsl_vector **v, int *flag)
 {
   if (str_tail_grep(fittype, "aussian_2peaks") == 0) {
@@ -1458,6 +1516,17 @@ static void set_fittype(gsl_multifit_function_fdf *f, const char *fittype, size_
       gsl_vector_set(*v, 0, 0);   /* y0 = 0 */
       gsl_vector_set(*v, 1, 1);   /* A = 1 */
       gsl_vector_set(*v, 2, 1);   
+      *flag = 1;
+    }
+ } else if (str_head_grep(fittype, "rayleigh") == 0) {
+    f->f = Rayleigh_f;
+    f->df = Rayleigh_df;
+    f->fdf = Rayleigh_fdf;
+    *p = 2;
+    if (*v == NULL) {
+      *v = gsl_vector_alloc(*p);
+      gsl_vector_set(*v, 0, 1);   /* A = 1 */
+      gsl_vector_set(*v, 1, 1);   /* sigma = 1 */
       *flag = 1;
     }
   } else if (str_head_grep(fittype, "dblexp") == 0) {

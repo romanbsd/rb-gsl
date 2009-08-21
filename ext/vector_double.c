@@ -84,7 +84,7 @@ static VALUE rb_gsl_vector_linspace(int argc, VALUE *argv, VALUE klass)
     /* do nothing */
     break;
   default:
-    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2 or 3)");
+    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2 or 3)", argc);
     break;
   }
   Need_Float(argv[0]);   Need_Float(argv[1]); 
@@ -104,7 +104,7 @@ static VALUE rb_gsl_vector_logspace(int argc, VALUE *argv, VALUE klass)
     /* do nothing */
     break;
   default:
-    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2 or 3)");
+    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2 or 3)", argc);
     break;
   }
   Need_Float(argv[0]);   Need_Float(argv[1]); 
@@ -124,7 +124,7 @@ static VALUE rb_gsl_vector_logspace2(int argc, VALUE *argv, VALUE klass)
     /* do nothing */
     break;
   default:
-    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2 or 3)");
+    rb_raise(rb_eArgError, "wrong number of arguments (%d for 2 or 3)", argc);
     break;
   }
   Need_Float(argv[0]);   Need_Float(argv[1]); 
@@ -298,7 +298,7 @@ VALUE rb_ary_to_gv0(VALUE ary)
 {
   gsl_vector *v = NULL;
   size_t i, size;
-  size = RARRAY(ary)->len;
+  size = RARRAY_LEN(ary);
   v = gsl_vector_alloc(size);
   if (v == NULL) rb_raise(rb_eNoMemError, "gsl_vector_alloc failed");
   for (i = 0; i < size; i++) {
@@ -311,7 +311,7 @@ VALUE rb_ary_to_gv(VALUE klass, VALUE ary)
 {
   gsl_vector *v = NULL;
   size_t i, size;
-  size = RARRAY(ary)->len;
+  size = RARRAY_LEN(ary);
   v = gsl_vector_alloc(size);
   if (v == NULL) rb_raise(rb_eNoMemError, "gsl_vector_alloc failed");
   for (i = 0; i < size; i++) {
@@ -707,7 +707,7 @@ static void draw_vector_array(VALUE ary, FILE *fp)
   VALUE vx;
   size_t j, n, stridex, stridey, stridez;
   int flag = 0;
-  switch (RARRAY(ary)->len) {
+  switch (RARRAY_LEN(ary)) {
   case 1:
     flag = 1;
     ptry = get_vector_ptr(rb_ary_entry(ary, 0), &stridey, &n);
@@ -732,7 +732,7 @@ static void draw_vector_array(VALUE ary, FILE *fp)
     break;
   default:
     rb_raise(rb_eRuntimeError, "wrong array length (%d for 1 or 2)", 
-	     RARRAY(ary)->len);
+	     (int) RARRAY_LEN(ary));
     break;
   }
   switch (flag) {
