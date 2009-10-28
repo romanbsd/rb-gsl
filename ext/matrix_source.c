@@ -2149,7 +2149,8 @@ static VALUE FUNCTION(rb_gsl_matrix,rot90)(int argc, VALUE *argv, VALUE obj)
   switch (p) {
   case 0:
     mnew = FUNCTION(gsl_matrix,alloc)(m->size1, m->size2);
-    FUNCTION(gsl_matrix,memcpy(mnew, m));
+    //    FUNCTION(gsl_matrix,memcpy(mnew, m));
+    FUNCTION(gsl_matrix,memcpy)(mnew, m);
     break;
   case 1:
   case -3:
@@ -2553,8 +2554,6 @@ void FUNCTION(Init_gsl_matrix,init)(VALUE module)
   rb_define_method(GSL_TYPE(cgsl_matrix), "+@",  
 		   FUNCTION(rb_gsl_matrix,uplus), 0);
 
-  rb_define_method(GSL_TYPE(cgsl_matrix), "power", 
-		   FUNCTION(rb_gsl_matrix,power), 1);
 
 /*****/
   rb_define_method(GSL_TYPE(cgsl_matrix), "submatrix", 
