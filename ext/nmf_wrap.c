@@ -9,10 +9,8 @@
 #include <gsl/gsl_matrix.h>
 
 int gsl_matrix_nmf(gsl_matrix *v, int cols, gsl_matrix **w, gsl_matrix **h);
-//double difcost(gsl_matrix *a, gsl_matrix *b);
 double difcost(const gsl_matrix *a, const gsl_matrix *b);
 
-//VALUE mNMF;
 static VALUE mNMF;
 extern VALUE cgsl_matrix;
 
@@ -62,7 +60,6 @@ static VALUE difcost_wrap(VALUE obj, VALUE matrix1, VALUE matrix2)
  */
 static VALUE matrix_nmf(VALUE obj, VALUE cols)
 {
-  //  nmf_wrap(cgsl_matrix, obj, cols);
   return nmf_wrap(cgsl_matrix, obj, cols);
 }
 

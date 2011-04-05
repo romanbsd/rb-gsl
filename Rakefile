@@ -27,7 +27,7 @@ spec = Gem::Specification.new do |s|
     'AUTHORS',
     'COPYING',
     'ChangeLog',
-    'README',
+    'README.rdoc',
     'Rakefile',
     'setup.rb',
     'THANKS',

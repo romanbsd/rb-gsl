@@ -1,2 +1,10 @@
-pkg/
-html/created.rid
+ext/*.o
+ext/*.so
+ext/Makefile
+ext/mkmf.log
+include/rb_gsl_config.h
+lib/gsl.rb
+lib/rbgsl.rb
+pkg/*.gem
+.config
+InstalledFiles

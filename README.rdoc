@@ -1,4 +1,3 @@
-=begin
 == Description
 Ruby/GSL, a ruby interface to GSL (GNU Scientific library)
 
@@ -28,5 +27,3 @@ submit reports from http://rubyforge.org/projects/rb-gsl/.
 == Author
 Yoshiki Tsunesada
 y-tsunesada at mm dot em-net dot ne dot jp
-
-=end

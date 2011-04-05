@@ -16,7 +16,6 @@
 #undef DEBUG
 
 #define mm(a, b) gsl_matrix_mult(a, b)
-//gsl_matrix * gsl_matrix_mult(gsl_matrix *a, gsl_matrix *b)
 gsl_matrix * gsl_matrix_mult(const gsl_matrix *a, const gsl_matrix *b)
 {
   gsl_matrix *c;
@@ -27,7 +26,6 @@ gsl_matrix * gsl_matrix_mult(const gsl_matrix *a, const gsl_matrix *b)
 }
 
 // pretty print
-//void pp(gsl_matrix *m)
 void pp(const gsl_matrix *m)
 {
   int r, c;
@@ -41,7 +39,6 @@ void pp(const gsl_matrix *m)
 }
 
 /* Returns a distance cost */
-//double difcost(gsl_matrix *a, gsl_matrix *b)
 double difcost(const gsl_matrix *a, const gsl_matrix *b)
 {
   int i, j;
@@ -53,7 +50,6 @@ double difcost(const gsl_matrix *a, const gsl_matrix *b)
     {
       d = gsl_matrix_get(a, i, j) - gsl_matrix_get(b, i, j);
       dif += d*d;
-	//      dif += pow(gsl_matrix_get(a, i, j) - gsl_matrix_get(b, i, j), 2);
     }
   }
   return dif;
