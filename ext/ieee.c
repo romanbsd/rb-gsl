@@ -61,7 +61,8 @@ static VALUE rb_gsl_ieee_fprintf_double(int argc, VALUE *argv, VALUE obj)
     rb_raise(rb_eTypeError, "wrong argument type %s (Float expected)",
 	     rb_class2name(CLASS_OF(vtmp)));
 #ifdef RUBY_1_9_LATER
-  gsl_ieee_fprintf_double(fp, &(RFLOAT_VALUE(vtmp)));
+  double _dbl = RFLOAT_VALUE(vtmp);
+  gsl_ieee_fprintf_double(fp, &_dbl);
 #else
   gsl_ieee_fprintf_double(fp, &(RFLOAT(vtmp)->value));
 #endif
