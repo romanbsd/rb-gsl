@@ -242,7 +242,11 @@ narray_config = dir_config('narray',$sitearchdir,$sitearchdir)
 # Try to find narray with RubyGems
 begin
   require 'rubygems'
-  na_gemspec=Gem.searcher.find('narray.h')
+  na_gemspec = if Gem::Specification.respond_to?(:find_by_path)
+    Gem::Specification.find_by_path('narray.h')
+  else
+    Gem.searcher.find('narray.h')
+  end
   if na_gemspec
     narray_config = File.join(na_gemspec.full_gem_path, na_gemspec.require_path)
     $CPPFLAGS = " -I#{narray_config} "+$CPPFLAGS
